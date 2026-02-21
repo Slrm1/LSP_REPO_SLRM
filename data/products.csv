@@ -1,0 +1,6 @@
+ProductID,Name,Price,Category
+1,Widget A,9.99,Toys
+2,Laptop Pro,999.00,Electronics
+3,Coffee Mug,5.50,Home
+4,Smartphone,555.00,Electronics
+5,InvalidID,not_a_number,Electronics

@@ -1,0 +1,5 @@
+ProductID,Name,Price,Category,PriceRange
+1,WIDGET A,9.99,Toys,Low
+2,LAPTOP PRO,899.10,Premium Electronics,Premium
+3,COFFEE MUG,5.50,Home,Low
+4,SMARTPHONE,499.50,Electronics,High
