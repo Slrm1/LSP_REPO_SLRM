@@ -1,64 +1,13 @@
-### Assignment 3 Reflection: Object-Oriented Redesign of ETL Pipeline
+# Assignment 3 Reflection: Object-Oriented Redesign of ETL Pipeline
 
-#### Comparison of Assignment 2 and Assignment 3 Designs
+The main difference between Assignment 2 and Assignment 3 can be seen when examining the way they are constructed and organized. While Assignment 2 relies on a monolithic design, with a single class handling all operations, Assignment 3 introduces a modular and object-oriented approach with a separate concern-based design.
 
-My Assignment 2 solution implemented the entire ETL pipeline inside a single `ETLPipeline` class under `org.howard.edu.lsp.assignment2`. That class directly handled reading from the input CSV file, parsing and validating each line, transforming the data, writing output, and printing summary statistics. All of the logic lived in one file, which made it straightforward but tightly coupled and harder to extend or test in isolation.
+The monolithic design used in Assignment 2 means that a single class, ETLPipeline, controls all operations. This includes configuration constants like file paths and headers, file input/output operations, processing statistics, CSV parsing, transformation rules, and the final formatting. While this design works well for a small-scale ETL pipeline, this design makes the program difficult to read, maintain, and modify. Any changes to the program, whether to the transformation rules or the input format, require changes to this class and increase the likelihood of new bugs.
 
-In Assignment 3, I redesigned the solution to use multiple collaborating classes under the package `org.howard.edu.lsp.assignment3`. Instead of a single monolithic class, I now have dedicated classes for configuration (`ETLConfiguration`), statistics tracking (`ETLStatistics`), domain objects (`ProductRecord` and `TransformedProductRecord`), parsing (`RowParser`), transformation (`ProductTransformer`), coordination of a single line (`RowProcessor`), orchestration of the entire pipeline (`CsvETLRunner`), and the entry point (`ETLApp`). Each class has a clearer and narrower responsibility, and together they implement the same behavior as Assignment 2.
+In contrast, the design used for Assignment 3 separates the program into many classes, each with a specific and well-defined role. The ETLApp class handles the entry point and controls the flow between classes. The ETLConfiguration class stores configuration variables like file paths and headers. The ETLStatistics class stores statistics about the rows processed, including the number read, transformed, and skipped. The CsvETLRunner class handles the flow between the reader and writer classes. The RowProcessor class handles each row separately by calling the RowParser and ProductTransformer classes. Data is stored separately and takes the form of a ProductRecord and a TransformedProductRecord. The design used for Assignment 3 makes the program easy to read, maintain, and modify. Each class performs a well-defined role, and their interaction with each other is well-structured.
 
-#### How Assignment 3 Is More Object-Oriented
+In Assignment 3, we get a better look at the object-oriented skeleton of the system by considering it as a collection of cooperating objects. We can recognize the basic idea of classes and objects by noticing how we divide responsibilities between different objects instead of loading everything into a single class. Encapsulation is nicely used, especially in ETLStatistics, where counters are kept private and change hands only through public methods like increment. In ProductRecord and TransformedProductRecord, we keep our internal states hidden by making our fields private and final, which preserves immutability and thus maintains the integrity of our objects. We favor composition over inheritance, as we construct our objects from smaller, more specialized objects, with ETLApp acting as glue for our pipeline and RowProcessor consisting of a parser and a transformer. Even though we do not use inheritance directly, we provide ourselves with opportunities for extending our system using polymorphism. We could, for example, use an interface to allow for different row processor implementations for different file types (CSV, JSON) without changing our existing objects.
 
-Assignment 3 is more object-oriented in several ways:
+To verify that Assignment 3 maintains the functional behavior of Assignment 2, a proper test plan should be implemented. To do this, a key approach would be to conduct a golden file test. This would involve running Assignment 2 with a standard input file and obtaining the output from this run. This would serve as a reference file. Next, Assignment 3 would be run with the same input file, and a comparison would be made between the outputs, including content, formatting, and order, using a file comparison tool. Additionally, a comparison would be made with regard to console outputs to ensure that statistics such as rows read, rows transformed, and rows skipped match exactly. If the input file does not exist, then it should be clear that Assignment 2 and Assignment 3 would behave in exactly the same manner and would report an error message and exit cleanly without creating any output file. If there are blank lines, improper rows, and improper numbers in the input file, then Assignment 2 and Assignment 3 should behave exactly in the same manner and skip these rows, thus incrementing the skipped counter. If Assignment 3 is run with an empty input file, then Assignment 3 should produce an output file with only the header and report zero rows processed.
 
-- **Separation of concerns**: The reading/writing of files, parsing of CSV lines, application of business rules, and tracking of statistics are handled by separate classes. This avoids mixing unrelated responsibilities in a single class.
-- **Domain modeling**: The input row is modeled as a `ProductRecord` object and the transformed row is modeled as a `TransformedProductRecord`. This makes the code more expressive and easier to reason about than passing around raw arrays of `String`.
-- **Encapsulation**: Implementation details are hidden behind clear public methods. For example, the discount rules and price range logic are encapsulated inside `ProductTransformer`, and the counter fields are private inside `ETLStatistics`.
-- **Composability**: The `ETLApp` class wires up the pipeline by composing objects (`RowParser`, `ProductTransformer`, `RowProcessor`, `CsvETLRunner`) instead of doing all work itself. This makes it easier to change or replace components in the future.
-
-#### Object-Oriented Concepts Used
-
-- **Object and Class**: I introduced several new classes to represent distinct concepts in the pipeline:
-  - `ETLConfiguration` represents configuration data such as file paths and headers.
-  - `ETLStatistics` represents the mutable statistics for the ETL run.
-  - `ProductRecord` and `TransformedProductRecord` represent the domain data before and after transformation.
-  - `RowParser`, `ProductTransformer`, `RowProcessor`, and `CsvETLRunner` represent services that perform specific tasks.
-- **Encapsulation**: Each class keeps its fields private and exposes only the methods needed by other classes. For example, callers cannot directly change the internal counters in `ETLStatistics`; they must use methods such as `incrementRowsRead()` and `incrementRowsTransformed()`. This hides the internal representation and protects invariants.
-- **Composition**: The pipeline is built through composition. `ETLApp` creates the configuration, statistics, parser, transformer, and row processor, then passes them to `CsvETLRunner`. `RowProcessor` composes a `RowParser` and a `ProductTransformer`. This is a key OO idea: larger behavior emerges from composing smaller, focused objects.
-- **(Optional) Polymorphism and Inheritance**: The current design does not rely heavily on inheritance hierarchies; instead, it favors composition. However, the design makes it easy to introduce polymorphism later. For example, I could define an interface such as `LineTransformer` and have `ProductTransformer` implement it, or create different `ETLRunner` implementations for other input formats. I chose not to introduce unnecessary inheritance here to keep the design simple and focused on the assignment requirements.
-
-#### Preserving Behavior and Testing
-
-The Assignment 3 implementation is intended to behave exactly the same as Assignment 2:
-
-- It uses the same relative input and output paths: `data/products.csv` and `data/transformed_products.csv`.
-- It writes the same CSV header line: `ProductID,Name,Price,Category,PriceRange`.
-- It applies the same transformations:
-  - Converts the product name to uppercase.
-  - Applies a 10% discount for products in the `Electronics` category.
-  - Rounds prices to two decimal places using round-half-up.
-  - Changes the category to `Premium Electronics` when the discounted price is greater than 500.00 and the original category was `Electronics`.
-  - Computes the same `PriceRange` values (`Low`, `Medium`, `High`, `Premium`) based on the final rounded price.
-- It uses the same rules for skipping invalid rows and for counting rows read, transformed, and skipped.
-
-To confirm that Assignment 3 behaves the same as Assignment 2, I used the following testing approach:
-
-1. **Normal case with valid input**: I ran the original Assignment 2 program and saved the generated `data/transformed_products.csv`. Then I ran the Assignment 3 `ETLApp` and compared its output file to the Assignment 2 file to ensure they matched (same lines, same formatting). I also verified that the printed summary statistics (rows read/transformed/skipped) were the same.
-2. **Missing input file**: I temporarily renamed or removed `data/products.csv` and ran the Assignment 3 program. It printed the same error message as Assignment 2: `Error: Input file 'data/products.csv' not found.` and did not create a new output file.
-3. **Empty input file**: I tested with an input file that contains only the header or has no data rows. In this case, the program writes the header to `transformed_products.csv`, does not write any data rows, and prints a summary showing that zero rows were transformed.
-4. **Invalid and blank lines**: I confirmed that blank lines, lines with the wrong number of fields, and lines with invalid product IDs or prices are all skipped consistently and counted in the `rowsSkipped` total.
-
-By running these tests and comparing outputs and console messages, I verified that the new object-oriented design for Assignment 3 preserves the exact behavior of my Assignment 2 solution while improving structure and clarity.
-
-#### Use of Generative AI and Adaptation
-
-For this assignment, I used a generative AI assistant (Cursor / ChatGPT) to help me redesign my ETL pipeline to be more object-oriented. I provided my original Assignment 2 `ETLPipeline` code and the Assignment 3 instructions, and asked the assistant to propose an OO decomposition. The assistant suggested breaking the solution into multiple classes, including configuration, statistics, domain objects, parsing, transformation, and a runner class.
-
-I adapted these suggestions in several ways:
-
-- I kept the class names and package name consistent with the course guidelines (`org.howard.edu.lsp.assignment3` and one public class per file).
-- I carefully checked that the logic in `ProductTransformer` matched my original `transformRow` and `determinePriceRange` methods from Assignment 2, including the exact rounding behavior and threshold values.
-- I ensured that the new code used the same error messages, header line, and relative file paths so that graders can run either version and see identical behavior.
-- I reviewed and edited the AI-generated Javadocs and comments for accuracy and clarity, and removed any text that did not match what my code actually does.
-
-Overall, the AI assistant helped me think about how to decompose the pipeline into objects and how to name and connect the classes. I still made design decisions myself, wrote and organized the source files, and verified that the updated implementation behaves exactly like my original Assignment 2 solution.
-
+In other words, Assignment 3 is a resounding success as a refactor of Assignment 2. It retains the same external behavior and functional requirements, but the internal structure is a real improvement. By increasing cohesion, decreasing coupling, and emphasizing encapsulation and composition, the object-oriented design is more maintainable, extendible, and scalable. By moving away from a monolithic design to a more modular system, a cleaner, more professional solution is achieved without altering the external behavior.
